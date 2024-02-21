@@ -12,45 +12,43 @@ struct ContentView: View {
     let emojis: Array<String> = ["👻","🎃","😈","🕷️", "🌈", "🌹","🌧️","🏓","🚘","🚄","⛽️"]
     @State var cardCount: Int = 4
     
-    var body: some View {
+    var body: some View { // some vs any 主要的区别在于编译阶段,对编译器来说,对象类型是否是确定的.
         VStack{
-            cards
+            ScrollView {
+                cards
+            }
+            Spacer()
             cardCountAdjusters
         }
-        .foregroundColor(.orange)
         .padding()
     }
     
     var cards: some View{
         HStack{
-            ForEach(0..<cardCount, id: \.self){ index in
-                CardView(content: emojis[index]);
-            }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 85))], content: {
+                ForEach(0..<cardCount, id: \.self){ index in
+                    CardView(content: emojis[index])
+                        .aspectRatio(2/3, contentMode: .fit)
+                }
+            })
         }
     }
     
+    func cardCountAdjester(by offset: Int, symbol: String) -> some View {
+        Button(action: {
+            cardCount += offset
+        }, label: {
+            Image(systemName: symbol)
+        })
+        .disabled(cardCount + offset < 1 || cardCount + offset > emojis.count)
+    }
     var cardCountAdjusters: some View {
         HStack{
-            Button(action: {
-                if(cardCount > 1){
-                    cardCount -= 1
-                }
-            }, label: {
-                Image(systemName: "rectangle.stack.badge.minus.fill")
-            })
+            cardCountAdjester(by: -1, symbol: "rectangle.stack.badge.minus.fill")
             Spacer()
-            
-            Button("Reset Card") {
-                cardCount = 4
-            }
-            Spacer()
-            Button("Add Card") {
-                if(cardCount < emojis.count){
-                    cardCount += 1
-                }
-            }
+            cardCountAdjester(by: 1, symbol: "rectangle.stack.badge.plus.fill")
         }
-        //            .imageScale(.large)
+        .imageScale(.large)
         //            .font(.largeTitle)
     }
 }
@@ -65,14 +63,15 @@ struct CardView: View {
                 cornerRadius: 12
             )
             
-            if(isFaceUp){
+            Group{
                 base.fill(.white)
                 base.strokeBorder(lineWidth: 2)
                 Text(content).font(.largeTitle)
-            } else {
-                base.fill()
             }
+            .opacity(isFaceUp ? 1 : 0)
+            base.fill().opacity(isFaceUp ? 0 : 1)
         }
+        .foregroundColor(.orange)
         .onTapGesture {
             isFaceUp.toggle()
         }
